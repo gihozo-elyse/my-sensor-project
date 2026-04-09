@@ -14,6 +14,9 @@ import {
   LogOut,
 } from "lucide-react";
 import { useState } from "react";
+import { useSearch } from "@/components/search-context";
+import { useAuth } from "@/components/auth-context";
+import { useRouter } from "next/navigation";
 
 type AppShellProps = {
   title: string;
@@ -34,6 +37,16 @@ const navItems = [
 export function AppShell({ title, subtitle, children }: AppShellProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { query, setQuery } = useSearch();
+  const { email, logout } = useAuth();
+  const router = useRouter();
+
+  function handleLogout() {
+    logout();
+    router.push("/login");
+  }
+
+  const initials = email ? email.slice(0, 2).toUpperCase() : "MO";
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -71,7 +84,7 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
           })}
         </nav>
 
-        <button className="mt-10 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950">
+        <button onClick={handleLogout} className="mt-10 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950">
           <LogOut className="h-4 w-4" />
           LOGOUT
         </button>
@@ -91,16 +104,16 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
               <Search className="h-4 w-4 text-slate-400" />
               <input
                 className="w-full bg-transparent text-sm outline-none"
-                placeholder="Search"
+                placeholder="Search sensors, reports, messages, settings…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
             <Bell className="h-5 w-5 text-slate-500" />
             <div className="hidden items-center gap-2 md:flex">
-              <span className="text-xs uppercase text-slate-500">
-                Mine Operator
-              </span>
+              <span className="text-xs text-slate-600 truncate max-w-[140px]">{email}</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-xs font-semibold text-slate-950">
-                MO
+                {initials}
               </div>
             </div>
           </div>
@@ -109,7 +122,7 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
         <main className="p-4 md:p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-            {subtitle ? <p className="text-slate-500">{subtitle}</p> : null}
+            {subtitle ? <p className="text-slate-700">{subtitle}</p> : null}
           </div>
           {children}
         </main>

@@ -21,7 +21,7 @@ function trendLabel(value: number) {
   return `${sign}${value.toFixed(1)}% since last hour`;
 }
 
-const DISTRIBUTION_COLORS = ["#f59e0b", "#0f172a", "#d1d5db"];
+const DISTRIBUTION_COLORS = ["#f59e0b", "#0f172a", "#3b82f6"];
 
 export function DashboardView() {
   const { data, loading, error } = useSensorData();
@@ -79,9 +79,9 @@ export function DashboardView() {
           const Icon = card.icon;
           return (
             <article key={card.title} className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="mb-3 flex items-center gap-2 text-slate-500">
+              <div className="mb-3 flex items-center gap-2 text-slate-800">
                 <Icon className="h-4 w-4 text-amber-500" />
-                <span className="text-sm">{card.title}</span>
+                <span className="text-sm font-medium">{card.title}</span>
               </div>
               <p className="text-3xl font-semibold text-slate-900">
                 {loading ? "--" : Math.round(card.value)}
@@ -97,25 +97,25 @@ export function DashboardView() {
       <section className="grid gap-4 lg:grid-cols-3">
         <article className="rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Sensor Readings (24h)</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Sensor Readings (24h)</h2>
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="time" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#1e293b" }} />
+                <YAxis tick={{ fontSize: 12, fill: "#1e293b" }} />
                 <Tooltip />
                 <Line type="monotone" dataKey="gas" stroke="#f59e0b" strokeWidth={3} dot={false} />
                 <Line type="monotone" dataKey="temperature" stroke="#0f172a" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="humidity" stroke="#94a3b8" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="humidity" stroke="#3b82f6" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-4 text-lg font-semibold">Sensor Distribution</h2>
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Sensor Distribution</h2>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
