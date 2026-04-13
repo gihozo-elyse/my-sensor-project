@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Search, Bell, Home } from "lucide-react";
+import { Menu, Search, Bell } from "lucide-react";
 import {
   LayoutDashboard,
   Cpu,
@@ -56,10 +56,7 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
         }`}
       >
         <div className="mb-8 flex items-center gap-2 px-2">
-          <Home className="h-5 w-5 text-amber-500" />
-          <span className="text-xl font-semibold tracking-wide text-white">
-            MINE SAFE
-          </span>
+          <img src="/logg.jpeg" alt="Mine Safe Logo" className="h-10 w-auto rounded" />
         </div>
 
         <nav className="space-y-2">
