@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { SearchProvider } from "@/components/search-context";
 import { AuthProvider } from "@/components/auth-context";
 import { AuthGuard } from "@/components/auth-guard";
+import { SensorMonitor } from "@/components/sensor-monitor";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,10 +35,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-slate-100 text-slate-900">
         <AuthProvider>
           <AuthGuard>
+            <SensorMonitor />
             <SearchProvider>{children}</SearchProvider>
           </AuthGuard>
         </AuthProvider>
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position="top-right" expand={true} closeButton />
       </body>
     </html>
   );

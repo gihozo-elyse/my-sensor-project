@@ -7,15 +7,20 @@ export default function AlertsPage() {
   const { data } = useSensorData();
   const gas = data.latest?.gas ?? 0;
   const temp = data.latest?.temperature ?? 0;
+  const humidity = data.latest?.humidity ?? 0;
 
   const items = [
     {
-      text: `High gas level detected - ${gas} PPM`,
+      text: `Gas level detected: ${gas.toFixed(1)} PPM — ${gas > 800 ? "Be careful! Evacuate immediately." : gas > 400 ? "Rising gas detected, be careful!" : "Gas level is safe."}`,
       severity: gas > 800 ? "Critical" : gas > 400 ? "Warning" : "Safe",
     },
     {
-      text: `Temperature status - ${temp}°C`,
+      text: `Temperature detected: ${temp.toFixed(1)}°C — ${temp > 40 ? "Be careful! Dangerously hot." : temp > 35 ? "Temperature rising, be careful!" : "Temperature is normal."}`,
       severity: temp > 40 ? "Critical" : temp > 35 ? "Warning" : "Safe",
+    },
+    {
+      text: `Humidity detected: ${humidity.toFixed(1)}% — ${humidity > 90 ? "Be careful! Extremely humid." : humidity > 70 ? "Humidity rising, be careful!" : "Humidity is normal."}`,
+      severity: humidity > 90 ? "Critical" : humidity > 70 ? "Warning" : "Safe",
     },
   ];
 

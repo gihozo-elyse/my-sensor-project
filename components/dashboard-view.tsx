@@ -84,7 +84,7 @@ export function DashboardView() {
                 <span className="text-sm font-medium">{card.title}</span>
               </div>
               <p className="text-3xl font-semibold text-slate-900">
-                {loading ? "--" : Math.round(card.value)}
+                {loading ? "--" : card.value.toFixed(1)}
               </p>
               <p className={`mt-1 text-sm ${card.trend >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                 {trendLabel(card.trend)}
