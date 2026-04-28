@@ -1,0 +1,15 @@
+
+> my-sensor-project@0.1.0 dev
+> next dev
+
+⚠ You are using a non-standard "NODE_ENV" value in your environment. This creates inconsistencies in the project and is strongly advised against. Read more: https://nextjs.org/docs/messages/non-standard-node-env
+▲ Next.js 16.2.0 (Turbopack)
+- Local:         http://localhost:54112
+- Network:       http://192.168.56.1:54112
+- Environments: .env.local
+✓ Ready in 445ms
+TypeError: Cannot read properties of undefined (reading 'replace')
+    at ignore-listed frames
+[?25h
+
+c:\Users\user\Documents\cd my-sensor-project\my-sensor-project>
