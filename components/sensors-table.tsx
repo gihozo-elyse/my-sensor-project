@@ -57,15 +57,6 @@ export function SensorsTable() {
       reading: `${latest?.humidity ?? 0}%`,
       level: "safe",
     },
-    {
-      id: "S004",
-      name: "Air Flow Sensor",
-      type: "Ventilation",
-      zone: "Shaft C",
-      status: "Inactive",
-      reading: "N/A",
-      level: "safe",
-    },
   ];
 
   const filtered = rows.filter((row) => {
