@@ -1,12 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+
+type Result = { ok: boolean; error?: string };
 
 type AuthContextType = {
   email: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  signup: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<Result>;
+  signup: (email: string, password: string) => Promise<Result>;
   logout: () => Promise<void>;
 };
 
@@ -18,74 +20,57 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 });
 
+async function postAuth(body: Record<string, string>) {
+  const res = await fetch("/api/auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { res, data };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount, verify the stored email against the DB
+  // The session lives in an httpOnly cookie; ask the server who we are.
   useEffect(() => {
-    const stored = localStorage.getItem("auth_email");
-    if (!stored) {
-      setLoading(false);
-      return;
-    }
-    fetch(`/api/auth?email=${encodeURIComponent(stored)}`)
+    fetch("/api/auth", { cache: "no-store" })
       .then((r) => r.json())
-      .then((data) => {
-        if (data.valid) {
-          setEmail(stored);
-        } else {
-          localStorage.removeItem("auth_email");
-        }
-      })
-      .catch(() => localStorage.removeItem("auth_email"))
+      .then((data) => setEmail(data.email ?? null))
+      .catch(() => setEmail(null))
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(inputEmail: string, inputPassword: string) {
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "login", email: inputEmail, password: inputPassword }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setEmail(data.email);
-      localStorage.setItem("auth_email", data.email);
-      return { ok: true };
+  const authenticate = useCallback(async (action: "login" | "signup", inputEmail: string, password: string) => {
+    try {
+      const { res, data } = await postAuth({ action, email: inputEmail, password });
+      if (res.ok) {
+        setEmail(data.email);
+        return { ok: true };
+      }
+      return { ok: false, error: data.error ?? "Something went wrong." };
+    } catch {
+      return { ok: false, error: "Can't reach the server. Check your connection." };
     }
-    return { ok: false, error: data.error };
-  }
+  }, []);
 
-  async function signup(inputEmail: string, inputPassword: string) {
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "signup", email: inputEmail, password: inputPassword }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setEmail(data.email);
-      localStorage.setItem("auth_email", data.email);
-      return { ok: true };
-    }
-    return { ok: false, error: data.error };
-  }
-
-  async function logout() {
-    if (email) {
-      await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "logout", email }),
-      });
-    }
+  const logout = useCallback(async () => {
+    await postAuth({ action: "logout" }).catch(() => {});
     setEmail(null);
-    localStorage.removeItem("auth_email");
-  }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ email, loading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{
+        email,
+        loading,
+        login: (e, p) => authenticate("login", e, p),
+        signup: (e, p) => authenticate("signup", e, p),
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Coal Mine Safety Monitoring
 
-## Getting Started
+This system monitors gas, temperature and humidity underground in real time. An **ESP8266** sensor node reads an MQ135 and a DHT22 and sounds a local alarm with LEDs, a buzzer and an LCD. It also uploads its readings to a **Next.js + MongoDB** dashboard, which shows live values, history charts and weekly reports, and sends push alerts.
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+ESP8266 (MQ135, DHT22) ──HTTP POST + X-API-Key──▶ /api/sensor ──▶ MongoDB
+                                                      │
+                          browser ◀── dashboard ◀─────┘  + web-push alerts on level changes
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Run the dashboard
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install the dependencies:
+   ```bash
+   npm install
+   ```
+2. Configure the environment:
+   ```bash
+   cp .env.example .env.local
+   ```
+   Then fill in `.env.local`:
+   - `MONGODB_URI`: your MongoDB connection string.
+   - `SESSION_SECRET`: generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+   - `SENSOR_API_KEY`: generate another random string the same way.
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`: optional, for push alerts. Create them with `npx web-push generate-vapid-keys`.
+3. Start the server:
+   ```bash
+   npm run dev -- -H 0.0.0.0
+   ```
+   The `-H 0.0.0.0` flag lets the ESP8266 reach the server over your LAN.
+4. Open http://localhost:3000 and create an account.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Flash the sensor node
 
-## Learn More
+1. Copy `firmware/mine_safety/secrets.example.h` to `secrets.h` and fill in:
+   - your Wi-Fi details
+   - `SERVER_URL` (use your PC's LAN IP, for example `http://192.168.1.66:3000/api/sensor`)
+   - `API_KEY` (the same value as `SENSOR_API_KEY`)
+2. Open `firmware/mine_safety/mine_safety.ino` in the Arduino IDE.
+3. Install the **DHT sensor library** and **LiquidCrystal I2C** libraries.
+4. Select **NodeMCU 1.0** and upload.
+5. Serial monitor: 115200 baud.
 
-To learn more about Next.js, take a look at the following resources:
+## Alert thresholds
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Metric | Warning above | Critical above |
+| --- | --- | --- |
+| Gas (MQ135, raw ADC 0–1023) | 400 | 800 |
+| Temperature | 35 °C | 40 °C |
+| Humidity | 70 % | 90 % |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The thresholds are defined in `lib/thresholds.ts` and mirrored at the top of the firmware sketch. Keep the two in sync.
 
-## Deploy on Vercel
+## Project layout
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/                 pages (dashboard, sensors, alerts, reports, settings, help) + API routes
+  api/sensor         POST readings (device, API key) · GET live data + bucketed history (signed-in users)
+  api/auth           sign up / sign in / sign out (scrypt-hashed passwords, httpOnly session cookie)
+  api/push-*         push subscription + test notification
+components/          UI (app shell, cards, charts, live data provider)
+lib/                 thresholds, MongoDB client, sessions, push, period grouping
+firmware/            ESP8266 sketch
+```

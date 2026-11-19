@@ -1,40 +1,38 @@
-import { MongoClient } from "mongodb";
 import { NextResponse } from "next/server";
-
-const client = new MongoClient(
-  process.env.MONGODB_URI ||
-  "mongodb+srv://elysegihozo123:elyse123456@cluster0.t9vzx.mongodb.net/mine_safety?retryWrites=true&w=majority"
-);
-
-async function getSubscriptions() {
-  await client.connect();
-  return client.db("mine_safety").collection("push_subscriptions");
-}
+import { subscriptions } from "@/lib/push";
+import { errorResponse, getSessionEmail, unauthorized } from "@/lib/session";
 
 export async function POST(request: Request) {
+  const email = await getSessionEmail();
+  if (!email) return unauthorized();
+
   try {
-    const { subscription, email } = await request.json();
-    const col = await getSubscriptions();
+    const { subscription } = await request.json();
+    if (!subscription?.endpoint || !subscription?.keys) {
+      return NextResponse.json({ error: "Invalid subscription." }, { status: 400 });
+    }
+    const col = await subscriptions();
     await col.updateOne(
       { "subscription.endpoint": subscription.endpoint },
       { $set: { subscription, email, updatedAt: new Date() } },
       { upsert: true }
     );
     return NextResponse.json({ ok: true });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (error) {
+    return errorResponse(error);
   }
 }
 
 export async function DELETE(request: Request) {
+  const email = await getSessionEmail();
+  if (!email) return unauthorized();
+
   try {
     const { endpoint } = await request.json();
-    const col = await getSubscriptions();
-    await col.deleteOne({ "subscription.endpoint": endpoint });
+    const col = await subscriptions();
+    await col.deleteOne({ "subscription.endpoint": endpoint, email });
     return NextResponse.json({ ok: true });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (error) {
+    return errorResponse(error);
   }
 }

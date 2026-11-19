@@ -1,7 +1,4 @@
+// The UMD build is imported to avoid bundler issues; reuse jsPDF's own type definitions.
 declare module "jspdf/dist/jspdf.umd.min.js" {
-  export class jsPDF {
-    setFontSize(size: number): void;
-    text(text: string, x: number, y: number): void;
-    save(filename: string): void;
-  }
+  export { jsPDF } from "jspdf";
 }

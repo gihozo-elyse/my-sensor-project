@@ -1,55 +1,62 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { SensorApiResponse } from "@/lib/sensor-types";
+import { useEffect, useState } from "react";
+import type { SensorApiResponse, SensorRange } from "@/lib/sensor-types";
 
-const EMPTY_DATA: SensorApiResponse = {
+export const EMPTY_DATA: SensorApiResponse = {
   latest: null,
+  online: false,
+  trend: { gas: null, temperature: null, humidity: null },
+  range: null,
   history: [],
-  trend: { gas: 0, temperature: 0, humidity: 0 },
 };
 
-export function useSensorData() {
+/**
+ * Polls /api/sensor. Pass a range to also receive bucketed history.
+ * Polling pauses while the tab is hidden.
+ */
+export function useSensorData(range: SensorRange | null = null, intervalMs = 5000) {
   const [data, setData] = useState<SensorApiResponse>(EMPTY_DATA);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const prevRef = useRef({ gas: 0, temp: 0, humidity: 0 });
 
   useEffect(() => {
-    let isMounted = true;
+    let alive = true;
+    let controller: AbortController | null = null;
+    setLoading(true);
 
     const fetchData = async () => {
+      if (document.hidden) return;
+      controller?.abort();
+      controller = new AbortController();
       try {
-        const response = await fetch("/api/sensor", { cache: "no-store" });
-        if (!response.ok) throw new Error("Unable to load sensor data");
-
-        const result: SensorApiResponse = await response.json();
-        if (!isMounted) return;
-
-        setData(result);
+        const qs = range ? `?range=${range}` : "";
+        const res = await fetch(`/api/sensor${qs}`, { cache: "no-store", signal: controller.signal });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error ?? "Unable to load sensor data");
+        if (!alive) return;
+        setData(body as SensorApiResponse);
         setError(null);
-        prevRef.current = {
-          gas: result.latest?.gas ?? 0,
-          temp: result.latest?.temperature ?? 0,
-          humidity: result.latest?.humidity ?? 0,
-        };
-      } catch (err: unknown) {
-        if (!isMounted) return;
-        const message = err instanceof Error ? err.message : "Failed to fetch sensor data";
-        setError(message);
+      } catch (err) {
+        if (!alive || (err instanceof DOMException && err.name === "AbortError")) return;
+        setError(err instanceof Error ? err.message : "Failed to fetch sensor data");
       } finally {
-        if (isMounted) setLoading(false);
+        if (alive) setLoading(false);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, intervalMs);
+    const onVisible = () => !document.hidden && fetchData();
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
-      isMounted = false;
+      alive = false;
+      controller?.abort();
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [range, intervalMs]);
 
   return { data, loading, error };
 }

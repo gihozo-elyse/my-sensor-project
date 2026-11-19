@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# firmware credentials
+firmware/**/secrets.h
+
+# local logs
+dev-output.txt
 
 # vercel
 .vercel

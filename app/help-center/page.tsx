@@ -1,242 +1,217 @@
 "use client";
 
 import { useState } from "react";
+import { BarChart3, ChevronDown, CircleHelp, Plug, Search, ShieldAlert, Wifi, Wrench } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useSearch } from "@/components/search-context";
+import { Card, EmptyState, cx } from "@/components/ui";
+import { METRICS } from "@/lib/thresholds";
 
-type Step = { title: string; content: string[] };
-type Guide = { title: string; icon: string; steps: Step[] };
+type Topic = { title: string; content: string[] };
+type Guide = { id: string; title: string; summary: string; icon: typeof Plug; topics: Topic[] };
+
+const g = METRICS.gas;
+const t = METRICS.temperature;
+const h = METRICS.humidity;
 
 const guides: Guide[] = [
   {
-    title: "ESP8266 Setup Guide",
-    icon: "🔌",
-    steps: [
+    id: "setup",
+    title: "Hardware setup",
+    summary: "Parts, wiring and flashing the ESP8266",
+    icon: Plug,
+    topics: [
       {
-        title: "What You Need",
+        title: "What you need",
         content: [
           "ESP8266 NodeMCU board",
-          "MQ-2 Gas Sensor",
-          "DHT22 Temperature & Humidity Sensor",
-          "USB cable (Micro-USB)",
-          "Stable Wi-Fi connection",
+          "MQ135 gas sensor module (analog output)",
+          "DHT22 temperature & humidity sensor",
+          "16×2 LCD with I²C backpack (address 0x27)",
+          "Buzzer, red LED, green LED (with 220 Ω resistors)",
+          "Micro-USB cable and a 2.4 GHz Wi-Fi network",
         ],
       },
       {
-        title: "Wiring the Sensors",
+        title: "Wiring",
         content: [
-          "MQ-2 Gas Sensor: VCC → 3.3V, GND → GND, AO → A0 pin on ESP8266",
-          "DHT22 Sensor: VCC → 3.3V, GND → GND, DATA → D4 pin on ESP8266",
-          "Double-check all connections before powering on",
-          "Use a breadboard for easier connections",
+          "MQ135: VCC → VIN (5 V), GND → GND, AO → A0",
+          "DHT22: VCC → 3V3, GND → GND, DATA → D4 (GPIO2), with a 10 kΩ pull-up to 3V3",
+          "LCD (I²C): SDA → D2, SCL → D1, VCC → VIN, GND → GND",
+          "Buzzer → D5 (GPIO14) · Green LED → D7 (GPIO13) · Red LED → pin set by RED_LED_PIN in the sketch",
+          "Note: the NodeMCU A0 pin accepts up to 3.3 V. Most MQ135 boards are fine, but check yours has a divider.",
         ],
       },
       {
-        title: "Connecting to the Dashboard",
+        title: "Flashing the firmware",
         content: [
-          "Power on the ESP8266 and wait 30 seconds for it to connect to Wi-Fi",
-          "Open your dashboard at http://localhost:3000 or your deployed URL",
-          "You should see live readings updating automatically every 5 seconds",
-          "If no data appears, make sure the ESP8266 power light is on and it is within Wi-Fi range",
+          "Open firmware/mine_safety/mine_safety.ino in the Arduino IDE",
+          "Copy secrets.example.h to secrets.h and fill in Wi-Fi name, password, SERVER_URL and API_KEY",
+          "Install libraries: DHT sensor library (Adafruit), LiquidCrystal I2C",
+          "Select board “NodeMCU 1.0 (ESP-12E Module)” and upload",
+          "The LCD shows the IP address once Wi-Fi connects; readings upload every 10 seconds",
         ],
       },
     ],
   },
   {
-    title: "Understanding Alert Levels",
-    icon: "⚠️",
-    steps: [
+    id: "alerts",
+    title: "Alert levels",
+    summary: "What each level means and what to do",
+    icon: ShieldAlert,
+    topics: [
       {
-        title: "Gas Level (PPM) Thresholds",
+        title: "Gas (MQ135)",
         content: [
-          "✅ Safe: 0 – 400 PPM — Normal mining conditions, no action needed",
-          "⚠️ Warning: 401 – 800 PPM — Elevated gas detected, increase ventilation and monitor closely",
-          "🚨 Critical: Above 800 PPM — Dangerous levels, evacuate the area immediately and alert safety team",
+          `Safe: up to ${g.warning} ADC: normal conditions`,
+          `Warning: ${g.warning}–${g.critical} ADC: elevated gas, increase ventilation and monitor`,
+          `Critical: above ${g.critical} ADC: evacuate the area and alert the safety team`,
+          "Values are the raw 0–1023 analog reading, not calibrated PPM",
         ],
       },
       {
-        title: "Temperature (°C) Thresholds",
+        title: "Temperature (DHT22)",
         content: [
-          "✅ Safe: Below 35°C — Normal operating temperature",
-          "⚠️ Warning: 35°C – 40°C — High temperature, check ventilation systems",
-          "🚨 Critical: Above 40°C — Dangerously hot, stop operations and evacuate",
+          `Safe: up to ${t.warning} °C`,
+          `Warning: ${t.warning}–${t.critical} °C: check ventilation`,
+          `Critical: above ${t.critical} °C: stop work and evacuate`,
         ],
       },
       {
-        title: "Humidity (%) Thresholds",
+        title: "Humidity (DHT22)",
         content: [
-          "✅ Safe: Below 70% — Normal humidity levels",
-          "⚠️ Warning: 70% – 90% — High humidity, monitor equipment for moisture damage",
-          "🚨 Critical: Above 90% — Extremely humid, risk of equipment failure and health hazards",
+          `Safe: up to ${h.warning} %`,
+          `Warning: ${h.warning}–${h.critical} %: watch equipment for moisture`,
+          `Critical: above ${h.critical} %: risk of equipment failure and heat stress`,
         ],
       },
       {
-        title: "What To Do When Alerts Fire",
+        title: "When an alert fires",
         content: [
-          "Warning alert: Notify the shift supervisor and increase ventilation",
-          "Critical alert: Immediately evacuate all personnel from the affected zone",
+          "Warning: notify the shift supervisor and increase ventilation",
+          "Critical: evacuate all personnel from the zone immediately",
           "Contact the safety officer and document the incident",
-          "Do not re-enter until sensors confirm safe levels",
-          "Check the Reports page for a full timeline of the incident",
+          "Don't re-enter until all channels are back to Safe",
+          "Review the timeline on the Alerts and Reports pages",
         ],
       },
     ],
   },
   {
-    title: "Sensor Calibration",
-    icon: "🔧",
-    steps: [
+    id: "dashboard",
+    title: "Using the dashboard",
+    summary: "Charts, trends, reports and notifications",
+    icon: BarChart3,
+    topics: [
       {
-        title: "When to Calibrate",
+        title: "Dashboard",
         content: [
-          "Calibrate sensors every 3 months for accurate readings",
-          "Recalibrate after any physical damage or replacement",
-          "Calibrate when readings seem inconsistent with actual conditions",
-          "Always calibrate in a known clean-air environment",
+          "The banner at the top shows the overall status: All clear, Warning or Critical",
+          "Each card shows the live value, its level, and the change vs. one hour ago",
+          "The bar under each value shows the safe / warning / critical zones",
+          "Click a card to chart that metric; switch the range between 1H, 6H, 24H and 7D",
+          "Dashed lines on the chart mark the warning and critical thresholds",
         ],
       },
       {
-        title: "Calibrating the MQ-2 Gas Sensor",
+        title: "Reports",
         content: [
-          "Power on the sensor and let it warm up for at least 24 hours before first use",
-          "In clean air, the sensor should read close to 0 PPM",
-          "Adjust the potentiometer on the sensor board if baseline is too high",
-          "Use a known gas concentration source to verify accuracy",
-          "Contact your system administrator if readings remain inaccurate",
+          "The hourly safety map colours each hour of the last 7 days by its worst reading",
+          "Daily breakdown groups hours into normal, warning and critical periods",
+          "Download PDF exports the full weekly report",
         ],
       },
       {
-        title: "Calibrating the DHT22 Sensor",
+        title: "Push notifications",
         content: [
-          "DHT22 is factory calibrated and generally accurate to ±0.5°C and ±2% humidity",
-          "Compare readings with a trusted thermometer/hygrometer",
-          "Avoid placing the sensor near heat sources or direct airflow",
-          "Contact your system administrator if a correction offset is needed",
-          "Replace the sensor if readings are consistently off by more than 3°C",
-        ],
-      },
-    ],
-  },
-  {
-    title: "Network Troubleshooting",
-    icon: "🌐",
-    steps: [
-      {
-        title: "ESP8266 Not Connecting to Wi-Fi",
-        content: [
-          "Make sure your router is on 2.4GHz — ESP8266 does not support 5GHz",
-          "Move the ESP8266 closer to the router to improve signal strength",
-          "Try restarting both the router and the ESP8266",
-          "Contact your system administrator if the issue persists",
-        ],
-      },
-      {
-        title: "Dashboard Not Receiving Data",
-        content: [
-          "Confirm the ESP8266 power light is on and it is connected to Wi-Fi",
-          "Ensure the dashboard server is running and accessible",
-          "Check that your firewall is not blocking port 3000",
-          "Try accessing /api/sensor directly in your browser to test the endpoint",
-          "Contact your system administrator if the issue persists",
-        ],
-      },
-      {
-        title: "Data Showing as 0 or Incorrect",
-        content: [
-          "Check all sensor wiring connections are secure",
-          "Make sure the sensor has enough warm-up time (MQ-2 needs 24h first use)",
-          "Replace the sensor if values remain at 0 after checking all connections",
-          "Contact your system administrator for further assistance",
+          "Go to Settings → Push notifications and press Enable alerts",
+          "Allow notifications when your browser asks",
+          "Alerts are sent by the server, so they arrive even with the dashboard closed",
+          "Use “Send test” to check a device is receiving them",
+          "On iPhone, add the site to your Home Screen first (iOS 16.4+)",
         ],
       },
     ],
   },
   {
-    title: "Reading Sensor Data",
-    icon: "📊",
-    steps: [
+    id: "calibration",
+    title: "Calibration & maintenance",
+    summary: "Keeping readings accurate",
+    icon: Wrench,
+    topics: [
       {
-        title: "Dashboard Overview",
+        title: "MQ135 gas sensor",
         content: [
-          "The dashboard shows the 3 latest sensor readings: Gas (PPM), Temperature (°C), Humidity (%)",
-          "Values update automatically every 5 seconds",
-          "The trend percentage shows change compared to the previous reading",
-          "Green trend = improving, Red trend = worsening conditions",
+          "Let a new sensor burn in for 24–48 hours before trusting readings",
+          "After power-on, allow a few minutes of warm-up each time",
+          "Record the clean-air baseline value and compare monthly",
+          "Adjust thresholds in lib/thresholds.ts and the firmware if your baseline differs",
         ],
       },
       {
-        title: "Understanding the Charts",
+        title: "DHT22 sensor",
         content: [
-          "Sensor Readings (24h) chart shows the last 24 data points over time",
-          "Amber line = Gas level, Dark line = Temperature, Blue line = Humidity",
-          "Hover over any point on the chart to see exact values at that time",
-          "Sensor Distribution pie chart shows equal weight of all 3 sensor types",
-        ],
-      },
-      {
-        title: "Sensors Page",
-        content: [
-          "Shows all connected sensors with their current status and readings",
-          "Active = sensor is online and sending data",
-          "Inactive = sensor is offline or not responding",
-          "Reading column shows the latest value with color: green = safe, amber = warning, red = critical",
-        ],
-      },
-      {
-        title: "Reports Page",
-        content: [
-          "Weekly report groups sensor data by day and shows condition periods",
-          "Each period shows the status (Normal/Warning/Critical), time range, and reason",
-          "Download PDF to save or share the weekly report",
-          "Use the search bar to filter by day name or condition type",
+          "Factory calibrated: about ±0.5 °C and ±2–5 % RH",
+          "Compare against a trusted thermometer/hygrometer every few months",
+          "Keep it away from heat sources and direct airflow",
+          "“Sensor Error / Check DHT22” on the LCD means a failed read; check the wiring and pull-up",
         ],
       },
     ],
   },
   {
+    id: "network",
+    title: "Troubleshooting",
+    summary: "Wi-Fi, uploads and missing data",
+    icon: Wifi,
+    topics: [
+      {
+        title: "Node won't connect to Wi-Fi",
+        content: [
+          "The ESP8266 only supports 2.4 GHz networks",
+          "Double-check WIFI_SSID and WIFI_PASSWORD in secrets.h",
+          "The node keeps alarming locally while offline and retries Wi-Fi every 15 seconds",
+        ],
+      },
+      {
+        title: "LCD shows “Upload failed”",
+        content: [
+          "HTTP 401: API_KEY in secrets.h doesn't match SENSOR_API_KEY on the server",
+          "HTTP 400: a reading was out of range; check the sensor wiring",
+          "HTTP 503: SENSOR_API_KEY isn't set in the server's .env.local",
+          "Negative code: the server can't be reached; check SERVER_URL uses your computer's LAN IP, not localhost",
+          "Make sure the firewall allows incoming connections on port 3000",
+        ],
+      },
+      {
+        title: "Dashboard shows “Offline”",
+        content: [
+          "No reading has arrived in the last 60 seconds",
+          "Check the node has power and look at the LCD for errors",
+          "Open the Serial Monitor at 115200 baud to see detailed logs",
+        ],
+      },
+    ],
+  },
+  {
+    id: "faq",
     title: "FAQ",
-    icon: "❓",
-    steps: [
+    summary: "Common questions",
+    icon: CircleHelp,
+    topics: [
       {
-        title: "How often does the dashboard update?",
-        content: [
-          "The dashboard polls the sensor API every 5 seconds automatically",
-          "No manual refresh is needed — data updates in real time",
-        ],
+        title: "How often does data update?",
+        content: ["The node uploads every 10 seconds; the dashboard refreshes every 5 seconds."],
       },
       {
-        title: "Can multiple users log in at the same time?",
-        content: [
-          "Yes, multiple users can create accounts and log in simultaneously",
-          "All users see the same live sensor data",
-          "Push notifications are sent to all logged-in devices",
-        ],
+        title: "Can several people use it at once?",
+        content: ["Yes. Each person creates an account; everyone sees the same live data and can enable push alerts on their own devices."],
       },
       {
-        title: "What happens if the ESP8266 loses connection?",
+        title: "Where is the data stored?",
         content: [
-          "The dashboard will continue showing the last received data",
-          "No new data points will be added to the history",
-          "The ESP8266 will automatically try to reconnect to Wi-Fi",
-          "Once reconnected, data will resume flowing to the dashboard",
-        ],
-      },
-      {
-        title: "How do I receive push notifications on my phone?",
-        content: [
-          "Open the dashboard on your phone's browser",
-          "Log in with your account",
-          "When prompted, tap 'Allow' for notifications",
-          "You will now receive alerts even when the browser is closed",
-          "Supported on Chrome, Edge, and Firefox on Android and desktop",
-        ],
-      },
-      {
-        title: "Where is the sensor data stored?",
-        content: [
-          "All sensor readings are stored in MongoDB Atlas cloud database",
-          "Data is retained and accessible from the Reports and Dashboard pages",
-          "User accounts are also stored securely in the same database",
+          "Readings, accounts and push subscriptions are stored in MongoDB",
+          "Passwords are stored hashed (scrypt), never in plain text",
         ],
       },
     ],
@@ -244,72 +219,93 @@ const guides: Guide[] = [
 ];
 
 export default function HelpCenterPage() {
-  const [openGuide, setOpenGuide] = useState<string | null>(null);
-  const [openStep, setOpenStep] = useState<string | null>(null);
+  const { query } = useSearch();
+  const [openTopic, setOpenTopic] = useState<string | null>("setup:What you need");
+  const [activeGuide, setActiveGuide] = useState<string>("setup");
+
+  const q = query.trim().toLowerCase();
+  const matches = (topic: Topic) => !q || topic.title.toLowerCase().includes(q) || topic.content.some((c) => c.toLowerCase().includes(q));
+
+  const visibleGuides = q
+    ? guides.map((gd) => ({ ...gd, topics: gd.topics.filter(matches) })).filter((gd) => gd.topics.length)
+    : guides.filter((gd) => gd.id === activeGuide);
 
   return (
-    <AppShell title="Help Center" subtitle="Guides and documentation for the Mine Safety Monitoring System">
-      <div className="space-y-4">
-        {guides.map((guide) => {
-          const isGuideOpen = openGuide === guide.title;
-          return (
-            <article key={guide.title} className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-              {/* Guide header */}
+    <AppShell title="Help Center" subtitle="Guides for setting up and running the monitoring system">
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+        {/* Guide picker */}
+        <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1 lg:content-start">
+          {guides.map((gd) => {
+            const active = !q && activeGuide === gd.id;
+            return (
               <button
+                key={gd.id}
                 onClick={() => {
-                  setOpenGuide(isGuideOpen ? null : guide.title);
-                  setOpenStep(null);
+                  setActiveGuide(gd.id);
+                  setOpenTopic(`${gd.id}:${gd.topics[0].title}`);
                 }}
-                className="flex w-full items-center justify-between p-5 text-left hover:bg-slate-50 transition"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{guide.icon}</span>
-                  <span className="font-semibold text-slate-900">{guide.title}</span>
-                </div>
-                {isGuideOpen ? (
-                  <ChevronUp className="h-5 w-5 text-slate-400" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-slate-400" />
+                className={cx(
+                  "flex items-start gap-3 rounded-xl border p-3 text-left transition",
+                  active ? "border-brand/40 bg-brand/10" : "border-line bg-surface hover:border-line-strong"
                 )}
+              >
+                <span className={cx("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-line", active ? "bg-brand/15 text-brand" : "bg-raised text-muted")}>
+                  <gd.icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className={cx("block text-sm font-medium", active ? "text-brand" : "text-fg")}>{gd.title}</span>
+                  <span className="hidden text-xs text-muted sm:block">{gd.summary}</span>
+                </span>
               </button>
+            );
+          })}
+        </nav>
 
-              {/* Guide content */}
-              {isGuideOpen && (
-                <div className="border-t border-slate-100 px-5 pb-5 pt-3 space-y-2">
-                  {guide.steps.map((step) => {
-                    const stepKey = `${guide.title}-${step.title}`;
-                    const isStepOpen = openStep === stepKey;
+        {/* Topics */}
+        <div className="space-y-6">
+          {visibleGuides.length === 0 ? (
+            <Card>
+              <EmptyState icon={<Search className="h-5 w-5" />} title="No help topics found" description={`Nothing matches “${query}”. Try “wiring”, “401” or “notifications”.`} />
+            </Card>
+          ) : (
+            visibleGuides.map((gd) => (
+              <section key={gd.id}>
+                <div className="mb-3 flex items-center gap-2">
+                  <gd.icon className="h-4 w-4 text-brand" />
+                  <h2 className="font-semibold text-fg">{gd.title}</h2>
+                </div>
+                <div className="space-y-2">
+                  {gd.topics.map((topic) => {
+                    const key = `${gd.id}:${topic.title}`;
+                    const isOpen = !!q || openTopic === key;
                     return (
-                      <div key={step.title} className="rounded-xl border border-slate-100 overflow-hidden">
+                      <Card key={key} as="article" className="overflow-hidden">
                         <button
-                          onClick={() => setOpenStep(isStepOpen ? null : stepKey)}
-                          className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition"
+                          onClick={() => setOpenTopic(isOpen ? null : key)}
+                          aria-expanded={isOpen}
+                          className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-raised/40"
                         >
-                          <span className="text-sm font-medium text-slate-800">{step.title}</span>
-                          {isStepOpen ? (
-                            <ChevronUp className="h-4 w-4 text-slate-400" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-slate-400" />
-                          )}
+                          <span className="text-sm font-medium text-fg">{topic.title}</span>
+                          <ChevronDown className={cx("h-4 w-4 text-muted transition-transform", isOpen && "rotate-180")} />
                         </button>
-                        {isStepOpen && (
-                          <ul className="border-t border-slate-100 bg-slate-50 px-4 py-3 space-y-2">
-                            {step.content.map((line, i) => (
-                              <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                        {isOpen ? (
+                          <ul className="space-y-2.5 border-t border-line px-5 py-4">
+                            {topic.content.map((line, i) => (
+                              <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-muted">
+                                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
                                 {line}
                               </li>
                             ))}
                           </ul>
-                        )}
-                      </div>
+                        ) : null}
+                      </Card>
                     );
                   })}
                 </div>
-              )}
-            </article>
-          );
-        })}
+              </section>
+            ))
+          )}
+        </div>
       </div>
     </AppShell>
   );
