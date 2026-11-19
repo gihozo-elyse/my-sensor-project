@@ -40,6 +40,9 @@ firmware/**/secrets.h
 # local logs
 dev-output.txt
 
+# Claude Code local settings
+.claude/
+
 # vercel
 .vercel
 
