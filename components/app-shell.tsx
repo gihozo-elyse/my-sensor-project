@@ -21,6 +21,7 @@ import { useSearch } from "@/components/search-context";
 import { useAuth } from "@/components/auth-context";
 import { useLiveSensor } from "@/components/live-sensor";
 import { LiveDot, LogoMark, cx, levelBg, timeAgo } from "@/components/ui";
+import { ThemeToggle } from "@/components/theme";
 import { METRIC_KEYS, levelFor, worstLevel } from "@/lib/thresholds";
 
 type AppShellProps = {
@@ -153,7 +154,7 @@ export function AppShell({ title, subtitle, actions, searchable = true, children
         </div>
 
         <div className="flex items-center gap-3 border-t border-line p-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-strong text-xs font-bold text-canvas">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-strong text-xs font-bold text-slate-950">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
@@ -197,6 +198,7 @@ export function AppShell({ title, subtitle, actions, searchable = true, children
                 <LiveDot online={data.online} />
                 {data.online ? "Live" : "Offline"}
               </span>
+              <ThemeToggle />
               <Link
                 href="/alerts"
                 className="relative rounded-xl p-2.5 text-muted ring-1 ring-line transition hover:bg-surface hover:text-fg"

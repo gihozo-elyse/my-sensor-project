@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Toaster } from "sonner";
 import { SearchProvider } from "@/components/search-context";
 import { AuthProvider } from "@/components/auth-context";
 import { AuthGuard } from "@/components/auth-guard";
+import { ThemedToaster, themeInitScript } from "@/components/theme";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -16,19 +16,30 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0d11",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f5f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0d11" },
+  ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      data-theme="light"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full bg-canvas text-fg">
         <AuthProvider>
           <AuthGuard>
             <SearchProvider>{children}</SearchProvider>
           </AuthGuard>
         </AuthProvider>
-        <Toaster theme="dark" richColors position="top-right" closeButton />
+        <ThemedToaster />
       </body>
     </html>
   );

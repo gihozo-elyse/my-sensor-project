@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Bell, Eye, EyeOff, Flame, Loader2, LineChart, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/components/auth-context";
 import { Button, cx } from "@/components/ui";
+import { ThemeToggle } from "@/components/theme";
 
 const FEATURES = [
   { icon: Flame, text: "Live gas, temperature and humidity readings" },
@@ -60,8 +61,11 @@ export default function LoginPage() {
         <div className="pointer-events-none absolute -left-32 -top-32 h-[480px] w-[480px] rounded-full bg-brand/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-40 right-0 h-[420px] w-[420px] rounded-full bg-brand-strong/10 blur-3xl" />
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "40px 40px" }}
+          className="pointer-events-none absolute inset-0 text-fg opacity-[0.05]"
+          style={{
+            backgroundImage: "linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
         />
 
         <div className="relative flex items-center gap-2 text-sm text-muted">
@@ -92,7 +96,8 @@ export default function LoginPage() {
       </aside>
 
       {/* Form */}
-      <main className="flex items-center justify-center px-5 py-12">
+      <main className="relative flex items-center justify-center px-5 py-12">
+        <ThemeToggle className="absolute right-5 top-5" />
         <div className="fade-up w-full max-w-sm">
           <div className="mb-8 flex justify-center lg:hidden">
             <div className="h-24 w-24 overflow-hidden rounded-full bg-[#f7f7f7] ring-4 ring-brand/70">

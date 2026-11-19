@@ -152,7 +152,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader icon={<UserRound className="h-4 w-4" />} title="Account" description="You're signed in with this email" />
             <div className="flex items-center gap-4 p-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-strong text-sm font-bold text-canvas">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-strong text-sm font-bold text-slate-950">
                 {email?.slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">

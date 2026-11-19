@@ -36,7 +36,7 @@ export function Card({
   id?: string;
 }) {
   return (
-    <Tag id={id} className={cx("rounded-2xl border border-line bg-surface shadow-[0_1px_0_0_rgb(255_255_255/0.03)_inset]", className)}>
+    <Tag id={id} className={cx("rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(16_24_40/0.05)] dark:shadow-[0_1px_0_0_rgb(255_255_255/0.03)_inset]", className)}>
       {children}
     </Tag>
   );
@@ -163,7 +163,7 @@ export function Button({
       {...props}
       className={cx(
         "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 disabled:cursor-not-allowed disabled:opacity-50",
-        variant === "primary" && "bg-brand text-canvas hover:bg-amber-400",
+        variant === "primary" && "bg-brand text-slate-950 hover:bg-amber-400",
         variant === "secondary" && "bg-raised text-fg ring-1 ring-line-strong hover:bg-line",
         variant === "ghost" && "text-muted hover:bg-raised hover:text-fg",
         className

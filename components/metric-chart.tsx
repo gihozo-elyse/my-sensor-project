@@ -3,13 +3,18 @@
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { SensorBucket, SensorRange } from "@/lib/sensor-types";
 import { METRICS, formatWithUnit, type Metric } from "@/lib/thresholds";
+import { useTheme } from "@/components/theme";
 
-const AXIS = { fontSize: 11, fill: "#636c7b" };
+// SVG attributes can't read CSS variables reliably, so chart colours are picked per theme.
+const PALETTE = {
+  light: { axis: "#8a93a3", grid: "#e3e6eb", cursor: "#cfd4dc", warn: "#d97706", crit: "#dc2626" },
+  dark: { axis: "#636c7b", grid: "#252a35", cursor: "#343b49", warn: "#fbbf24", crit: "#f87171" },
+};
 
 const SERIES_COLOR: Record<Metric, string> = {
   gas: "#f59e0b",
-  temperature: "#fb7185",
-  humidity: "#38bdf8",
+  temperature: "#f43f5e",
+  humidity: "#0ea5e9",
 };
 
 function tickFormatter(range: SensorRange) {
@@ -53,6 +58,8 @@ export function MetricChart({
 }) {
   const cfg = METRICS[metric];
   const color = SERIES_COLOR[metric];
+  const c = PALETTE[useTheme()];
+  const AXIS = { fontSize: 11, fill: c.axis };
   const maxVal = Math.max(cfg.critical * 1.1, ...data.map((d) => d[`${metric}Max`]));
   const minVal = Math.min(0, ...data.map((d) => d[metric]));
 
@@ -66,7 +73,7 @@ export function MetricChart({
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="#252a35" strokeDasharray="3 4" vertical={false} />
+          <CartesianGrid stroke={c.grid} strokeDasharray="3 4" vertical={false} />
           <XAxis
             dataKey="t"
             tick={AXIS}
@@ -84,19 +91,19 @@ export function MetricChart({
           />
           <ReferenceLine
             y={cfg.warning}
-            stroke="#fbbf24"
+            stroke={c.warn}
             strokeDasharray="5 5"
             strokeOpacity={0.7}
-            label={{ value: "Warning", position: "insideTopRight", fill: "#fbbf24", fontSize: 10 }}
+            label={{ value: "Warning", position: "insideTopRight", fill: c.warn, fontSize: 10 }}
           />
           <ReferenceLine
             y={cfg.critical}
-            stroke="#f87171"
+            stroke={c.crit}
             strokeDasharray="5 5"
             strokeOpacity={0.8}
-            label={{ value: "Critical", position: "insideTopRight", fill: "#f87171", fontSize: 10 }}
+            label={{ value: "Critical", position: "insideTopRight", fill: c.crit, fontSize: 10 }}
           />
-          <Tooltip content={<ChartTooltip metric={metric} />} cursor={{ stroke: "#343b49" }} />
+          <Tooltip content={<ChartTooltip metric={metric} />} cursor={{ stroke: c.cursor }} />
           <Area
             type="monotone"
             dataKey={metric}
