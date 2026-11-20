@@ -4,8 +4,7 @@ self.addEventListener("push", function (event) {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/logg.jpeg",
-      badge: "/logg.jpeg",
+      icon: "/icon-192.png",
       tag: data.tag || "mine-safe",
       renotify: true,
     })

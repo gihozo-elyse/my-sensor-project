@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: { default: "Coal Mine Safety", template: "%s · Coal Mine Safety" },
   description: "Real-time gas, temperature and humidity monitoring for underground mines.",
-  icons: { icon: "/logg.jpeg" },
+  // Favicons come from app/favicon.ico, app/icon.png and app/apple-icon.png (Next.js file conventions).
 };
 
 export const viewport: Viewport = {
